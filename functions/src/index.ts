@@ -20,7 +20,12 @@ import * as cors from "cors";
 initializeApp();
 const app = express();
 app.use(express.json());
-app.use(cors());
+const corsOptions = {
+  origin: "http://example.com",
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
 app.post("/", async (req, res) => {
   const user = req.body;
   try {
@@ -36,6 +41,7 @@ app.post("/", async (req, res) => {
     res.status(400).send("failed user add.");
   }
 });
+
 app.get("/:id", async (req, res) => {
   try {
     const documentResult = await getFirestore()
