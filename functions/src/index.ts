@@ -14,12 +14,13 @@ import * as express from "express";
 // The Firebase Admin SDK to access Firestore.
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-
+import * as cors from "cors";
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 initializeApp();
 const app = express();
 app.use(express.json());
+app.use(cors());
 app.post("/", async (req, res) => {
   const user = req.body;
   try {
@@ -76,4 +77,4 @@ app.put("/:id", async (req, res) => {
     res.status(400).send("failed user update.");
   }
 });
-export const userApi = onRequest({ cors: ["q-n.jp"] }, app);
+export const userApi = onRequest(app);
