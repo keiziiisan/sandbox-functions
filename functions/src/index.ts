@@ -14,18 +14,20 @@ import * as express from "express";
 // The Firebase Admin SDK to access Firestore.
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { defineSecret } from "firebase-functions/params";
 import * as cors from "cors";
+const discordApiKey = defineSecret("API_KEY");
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 initializeApp();
 const app = express();
 app.use(express.json());
 const corsOptions = {
-  origin: "http://example.com",
-  credentials: true,
-  optionsSuccessStatus: 200,
+  origin: "*",
+  optionsSuccessStatus: 204,
 };
 app.use(cors(corsOptions));
+
 app.post("/", async (req, res) => {
   const user = req.body;
   try {
@@ -43,16 +45,21 @@ app.post("/", async (req, res) => {
 });
 
 app.get("/:id", async (req, res) => {
-  try {
-    const documentResult = await getFirestore()
-      .collection("UsersCollection")
-      .doc(req.params.id)
-      .get();
+  const clientKey = req.headers.authorization;
+  if (clientKey === discordApiKey.value()) {
+    try {
+      const documentResult = await getFirestore()
+        .collection("UsersCollection")
+        .doc(req.params.id)
+        .get();
 
-    res.status(200).send(documentResult.data());
-  } catch (error) {
-    res.status(400).send("failed user get.");
+      res.status(200).send(documentResult.data());
+    } catch (error) {
+      res.status(400).send("failed user get.");
+    }
   }
+  res.status(400).send(`invalid API key.clientKey:${clientKey},
+  discordApiKey:${discordApiKey.value()}`);
 });
 app.delete("/:id", async (req, res) => {
   try {
@@ -83,4 +90,18 @@ app.put("/:id", async (req, res) => {
     res.status(400).send("failed user update.");
   }
 });
-export const userApi = onRequest(app);
+export const userApi = onRequest({ secrets: [discordApiKey] }, app);
+export const test = onRequest({ secrets: [discordApiKey] }, (req, res) => {
+  const clientKey = req.headers.authorization;
+  if (clientKey === discordApiKey.value()) {
+    res.status(200).send(
+      `SUCSESS,clientKey:${clientKey},
+        discordApiKey.value():${discordApiKey.value()}`
+    );
+  }
+  res.status(400).send(
+    `api key invalid,clientKey:${clientKey},
+      discordApiKey.value():${discordApiKey.value()}`
+  );
+});
+// curl https://userapi-zxd32l4aia-uc.a.run.app/RTGSTB1lFprPS3AjN3HU
